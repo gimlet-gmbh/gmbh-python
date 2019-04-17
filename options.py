@@ -85,7 +85,3 @@ def SetService(serviceoptions):
         if len(serviceoptions) != 0:
             options.service.PeerGroups = serviceoptions.PeerGroups
     return func
-
-
-
-    
