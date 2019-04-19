@@ -8,7 +8,7 @@ class transport:
         print()
 
     @staticmethod
-    def fromProto(self, proto):
+    def fromProto(proto):
         print()
     
 
@@ -32,7 +32,7 @@ class payload:
         print()
 
     @staticmethod
-    def fromProto(self, proto):
+    def fromProto(proto):
         print()
 
 class request:
@@ -56,7 +56,7 @@ class request:
         print()
 
     @staticmethod
-    def fromProto(self, proto):
+    def fromProto(proto):
         print()
 
 class responder:
@@ -72,5 +72,5 @@ class responder:
         print()
 
     @staticmethod
-    def fromProto(self, proto):
+    def fromProto(proto):
         print()
