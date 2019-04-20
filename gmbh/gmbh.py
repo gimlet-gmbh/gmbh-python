@@ -9,9 +9,9 @@ def fromClient():
     print("cli-ent")
 
 class registration:
-    def __init__(self, id, mode, address, fingerprint):
+    def __init__(self, id, address, fingerprint):
         self.id = id
-        self.mode = mode
+        self.mode = ""
         self.address = address
         self.fingerprint = fingerprint
 
@@ -39,10 +39,10 @@ class client:
 
         if self._env == "C":
             self._myAddress = os.environ.get('ADDR')
-            self._req = req.requester(self._myAddress)
+            self._req = req.requester(self._myAddress, self._opts, self._env)
             print("using core address from environment=",self._myAddress)
         else:
-            self._req = req.requester(self._opts.standalone.coreAddress)
+            self._req = req.requester(self._opts.standalone.coreAddress, self._opts, self._env)
             print("core address=", self._opts.standalone.coreAddress)
 
         print("                    _                 ")
@@ -53,7 +53,7 @@ class client:
         print("PeerGroup=",self._opts.service.peerGroups)
 
     def start(self):
-        print("starting gmbh python client")
+        self._req.register()
 
     def __shutdown(self):
         print("shutdown...")

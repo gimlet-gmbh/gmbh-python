@@ -1,13 +1,13 @@
-import intrigue_pb2
-import intrigue_pb2_grpc
 import grpc
+import intrigue_pb2 as pb2
+import intrigue_pb2_grpc as pb2_g
 
 
-class CabalServicer(intrigue_pb2_grpc.CabalServicer):
+class CabalServicer(pb2_g.CabalServicer):
     pass
 
     def RegisterService(self, request, context):
-        print()
+        return pb2.Receipt(Message="operation.invalid")
 
     def UpdateRegistration(self, request, context):
         print()

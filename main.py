@@ -1,15 +1,16 @@
 import sys
 sys.path.append('./gmbh')
 
-
 import gmbh
-
 
 def main():
     print("gmbh python client demo")
+     
+    # Creates a new service
+    theservice = gmbh.opts.service(name="pycli-tester")
+    options = gmbh.opts.new(service=theservice)
 
-    service_options = gmbh.opts.service(name="pycli-tester")
-    options = gmbh.opts.new(service=service_options)
+    # Creates a new client
     client = gmbh.client(options)
     client.start()
 
