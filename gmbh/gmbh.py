@@ -60,7 +60,7 @@ class client:
         print("PeerGroup=",self._opts.service.peerGroups)
     
     def start(self):
-        if self._opts.runtime.Blocking :
+        if self._opts.runtime.blocking :
             self.__start()
         else:
             t = Thread(target = self.__start())
