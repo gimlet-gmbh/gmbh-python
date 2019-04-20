@@ -21,7 +21,7 @@ class requester:
     def register(self):
         with grpc.insecure_channel(self.coreAddress) as channel:
             stub = intrigue_pb2_grpc.CabalStub(channel)
-            print("Core address", self.coreAddress)
+            
             
             request = intrigue_pb2.NewServiceRequest(
                 Service=intrigue_pb2.NewService(
@@ -45,8 +45,9 @@ class requester:
                     fingerprint=reg.Fingerprint
                 )
                 return r
+            else:
+                raise Exception("registration.gmbhUnavailable")
                 
-
     '''
         @param target string
         @param method string

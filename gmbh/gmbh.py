@@ -4,9 +4,14 @@ import options as opts
 import rpc_client as req
 import rpc_server as serv
 import data as data
+import time
+from threading import Thread, Lock
+import enum
 
 def fromClient():
     print("cli-ent")
+
+State = enum.Enum('State', 'Connected Disconnected')
 
 class registration:
     def __init__(self, id, address, fingerprint):
@@ -21,6 +26,7 @@ class client:
 
         self._registration = None
         self._con = None
+        self.state = None
 
         self._registeredFunctions = {}
         self._whoIs = {}
@@ -31,6 +37,7 @@ class client:
         self._closed = False
 
         self._opts = opts
+        self.mu = Lock()
 
         if self._opts.service.name == "":
             raise Exception("service name cannot be empty")
@@ -51,15 +58,48 @@ class client:
         print("  _|                                  ")
         print("service started from", os.path.dirname(os.path.realpath(__file__)))
         print("PeerGroup=",self._opts.service.peerGroups)
-
+    
     def start(self):
-        self._req.register()
+        if self._opts.runtime.Blocking :
+            self.__start()
+        else:
+            t = Thread(target = self.__start())
+            t.start()
+
+    def __start(self):
+
+        print("Should print __connect() time here")
+        t = Thread(target = self.__connect())
+        t.start()
 
     def __shutdown(self):
         print("shutdown...")
 
     def __connect(self):
         print("attempting to connect to coreData")
+
+        # If the service is already registered, then exit
+        if self.state == State.Connected:
+            print("state reported as connected; thread closing")
+            return
+
+        # Get a registration and print the details. 
+        # If the address was not received, then exit
+        reg = self._req.register()
+        if reg.address == "":
+            print("registration address not received")
+        
+        print("registration details:")
+        print("id=" + str(reg.id) + "; address=" +
+              str(reg.address) + "; fingerprint=" + reg.fingerprint)
+
+        self.mu.acquire()
+        try:
+            self._registration = reg
+            # self._con = newcabalconnect
+            self.state = State.Connected
+        finally:
+            self.mu.release()
 
     def __disconnect(self):
         print("disconnecting from gmbh-core")
