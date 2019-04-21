@@ -19,7 +19,7 @@ class CabalServicer(pb2_g.CabalServicer):
         print()
 
     def WhoIs(self, request, context):
-        print()
+        return pb2.WhoIsResponse(Error="unsupported in client")
 
     def Alive(self, request, context):
         print()
