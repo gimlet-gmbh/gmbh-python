@@ -11,7 +11,6 @@ from threading import Thread, Lock
 import enum
 
 State = enum.Enum('State', 'Connected Disconnected')
-global g
 
 class registration:
     def __init__(self, id, address, fingerprint):
@@ -41,7 +40,7 @@ class client:
         self._parentID = ""
         self._env = os.environ.get('ENV')
 
-        # If the conection is meant to be closed or not
+        # If the connection is meant to be closed or not
         self._closed = False
 
         self._opts = opts
@@ -54,10 +53,8 @@ class client:
 
         if self._env == "C":
             self._myAddress = os.environ.get('ADDR')
-            # self._req = req.requester(self._myAddress, self._opts, self._env)
             print("using core address from environment=",self._myAddress)
         else:
-            # self._req = req.requester(self._opts.standalone.coreAddress, self._opts, self._env)
             print("core address=", self._opts.standalone.coreAddress)
 
         print("                    _                 ")
