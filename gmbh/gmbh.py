@@ -246,6 +246,7 @@ class client:
                 Request="shutdown.notif",
                 Message=name
             )
+            print("Helllllllllllllo")
 
             stub.UpdateRegistration(request)
 

@@ -15,7 +15,6 @@ class CabalServicer(pb2_g.CabalServicer):
 
     def UpdateRegistration(self, serviceUpdate, context):
         print("-> Update Registration; Message=", serviceUpdate.Message)
-
         req = serviceUpdate.Request
         if req == "core.shutdown":
             print("received shutdown")
