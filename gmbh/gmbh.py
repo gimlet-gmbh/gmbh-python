@@ -1,16 +1,32 @@
 import os
 
 import options as opts
-import rpc_client
 import rpc_server as serv
-import data as data
+import data
 import datetime
 import signal
 import time
 from threading import Thread, Lock
 import enum
 
+# Import grpc for the client stubs
+import grpc
+import intrigue_pb2
+import intrigue_pb2_grpc
+
 State = enum.Enum('State', 'Connected Disconnected')
+g = None
+
+def newClient(opts=opts.new()):
+    print("newclient")
+    # if g != None:
+    #     return g
+
+    g = client(opts)
+    
+    if g._opts.service.name == "CoreData":
+        raise Exception()
+    return g
 
 class registration:
     def __init__(self, id, address, fingerprint):
@@ -27,10 +43,11 @@ class connection:
 
 class client:
 
-    def __init__(self, opts=opts.new()):
+    def __init__(self, opts):
             
         self._registration = None
         self._con = None
+        self._msgCounter = 0
         self.state = None
 
         self._registeredFunctions = {}
@@ -64,9 +81,17 @@ class client:
         print("service started from", os.path.dirname(os.path.realpath(__file__)))
         print("PeerGroup=",self._opts.service.peerGroups)
 
-    
+    '''User called methods'''
+    def route(self, route, handler):
+        self._registeredFunctions[route] = handler
+
+    def makeRequest(self, target, method, payload):
+        # response = self.__data()
+        print("Hi from makeRequest")
+
+    '''class called methods'''  
     def start(self):
-        if self._opts.runtime.blocking :
+        if self._opts.runtime.blocking:
             self.__start()
         else:
             t = Thread(target = self.__start())
@@ -99,7 +124,7 @@ class client:
         # If the address was not received, then exit
         while True:
             try:
-                reg = rpc_client.register(
+                reg = self.__register(
                     self._opts.standalone.coreAddress,
                     self._opts.service.name,
                     self._opts.service.aliases,
@@ -130,8 +155,6 @@ class client:
         print("connected; coreAddress=(" + reg.address + ")")
 
 # client needs to listen for shutdown notification in the server
-# need to pass options and environment as parameters
-
     def __shutdown(self, signum, frame):
             print("shutdown procedures started...")
 
@@ -142,7 +165,7 @@ class client:
             finally:
                 self.mu.release()
 
-            rpc_client.unregister(self._opts.standalone.coreAddress, self._opts.service.name)
+            self.__unregister(self._opts.standalone.coreAddress, self._opts.service.name)
             self.__disconnect()
 
             print("shutdown complete...")
@@ -171,3 +194,108 @@ class client:
         if not self._closed:
             time.sleep(5)
             self.__connect()
+    
+
+    def __resolveAddress(self, target):
+        addr = self._whoIs[target]
+
+        print("getting address for ", target)
+
+        self.__whoIs(self._opts.standalone.coreAddress, target)
+
+    '''
+        make a registration request to gmbhCore.
+
+        @return: registration object
+        !!! should raise an exception if could not get back a valid registration
+    '''
+    def __register(self, coreAddress, name, aliases, peergroups, environment):
+        with grpc.insecure_channel(coreAddress) as channel:
+            stub = intrigue_pb2_grpc.CabalStub(channel)
+
+            request = intrigue_pb2.NewServiceRequest(
+                Service=intrigue_pb2.NewService(
+                    Name=name,
+                    Aliases=aliases,
+                    IsServer=True,
+                    IsClient=True,
+                    PeerGroups=peergroups
+                ),
+                Address=coreAddress,
+                Env=environment
+            )
+
+            receipt = stub.RegisterService(request)
+
+            if receipt.Message == "acknowledged":
+                reg = receipt.serviceInfo
+                r = registration(
+                    id=reg.ID,
+                    address=reg.Address,
+                    fingerprint=reg.Fingerprint
+                )
+                return r
+            else:
+                raise Exception("registration.gmbhUnavailable")
+
+    def __unregister(self, coreAddress, name):
+        with grpc.insecure_channel(coreAddress) as channel:
+            stub = intrigue_pb2_grpc.CabalStub(channel)
+
+            request = intrigue_pb2.ServiceUpdate(
+                Request="shutdown.notif",
+                Message=name
+            )
+
+            stub.UpdateRegistration(request)
+
+    '''
+        @param target string
+        @param method string
+        @param data payload object
+
+        @return responder object
+        !!! should raise an exception if error
+        
+    # '''
+    # def __data(self, target, method, data, name, env):
+    #     with grpc.insecure_channel(coreAddress) as channel:
+    #         stub = intrigue_pb2_grpc.CabalStub(channel)
+
+    #         print("hit from data")
+
+    #         # t = datetime.datetime.now()
+    #         # request = intrigue_pb2.DataRequest(
+    #         #     Request=intrigue_pb2.Request(
+    #         #         Tport=intrigue_pb2.Transport(
+    #         #             Target=target,
+    #         #             Method=method,
+    #         #             Send=name
+    #         #         ),
+    #         #         Pload=data.payload.proto()
+    #         #     )
+    #         # )
+
+    #         # if env != "C" or os.getenv("LOGGING") == "1":
+    #         #     print("<=" + str(msgCounter) + "= target" + target + ", method: " + method)
+
+    #         # response = stub.Data(request)
+    #         # t = datetime.datetime.now() - t
+    #         # if env != "C" or os.getenv("LOGGING") == "1":
+    #         #     print(" =" + str(msgCounter) + "=> " + "time=" + str(t))
+
+    #         # if response.Responder:
+    #         #     return data.responder()
+
+    #         # return data.responder.fromProto(response.responder)
+
+
+    '''
+        @param target string
+
+        !!! should raise an exception if error
+    '''
+    def __whoIs(self, coreAddress, target):
+        with grpc.insecure_channel(coreAddress) as channel:
+            stub = intrigue_pb2_grpc.CabalStub(channel)
+            print("hi from whoIs")

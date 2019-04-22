@@ -69,8 +69,11 @@ class responder:
         print()
     
     def getPayload(self):
-        print()
+        return self._payload
 
     @staticmethod
-    def fromProto(proto):
-        print()
+    def fromProto(r):
+        ret = responder(_err=r._err)
+        if r._payload:
+            ret.setPayload()
+

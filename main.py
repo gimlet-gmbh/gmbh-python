@@ -11,8 +11,9 @@ def main():
     options = gmbh.opts.new(service=theservice)
 
     # Creates a new client
-    client = gmbh.client(options)
+    client = gmbh.newClient(options)
     client.start()
+    
 
 
 main()
