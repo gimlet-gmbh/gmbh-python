@@ -1,11 +1,11 @@
 import os
+import gmbh
 
 import grpc
 import intrigue_pb2 as pb2
 import intrigue_pb2_grpc as pb2_g
 import datetime 
 from threading import Thread, Lock
-import gmbh
 
 class CabalServicer(pb2_g.CabalServicer):
     pass

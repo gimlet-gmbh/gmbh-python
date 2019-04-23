@@ -2,15 +2,18 @@ import os
 
 import options as opts
 import rpc_server as serv
+import socket
 import data
 import datetime
 import signal
 import time
+from concurrent import futures
 from threading import Thread, Lock
 import enum
 
 # Import grpc for the client stubs
 import grpc
+from grpc_reflection.v1alpha import reflection
 import intrigue_pb2
 import intrigue_pb2_grpc
 
@@ -37,9 +40,9 @@ class registration:
 
 class connection:
     def __init__(self, address, server, connected):
-        self._server = None
-        self._address = ""
-        self._connected = False
+        self._server = server
+        self._address = address
+        self._connected = connected
 
 class client:
 
@@ -78,7 +81,8 @@ class client:
         print("  _  ._ _  |_  |_| /  | o  _  ._ _|_  ")
         print(" (_| | | | |_) | | \\_ | | (/_ | | |_ ")
         print("  _|                                  ")
-        print("service started from", os.path.dirname(os.path.realpath(__file__)))
+        print("service started from", 
+               os.path.dirname(os.path.realpath(__file__)))
         print("PeerGroup=",self._opts.service.peerGroups)
 
     '''User called methods'''
@@ -143,14 +147,31 @@ class client:
         if reg.address == "":
             print("registration address not received")
             return
-            
+
+        servicer = serv.CabalServicer()    
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        intrigue_pb2_grpc.add_CabalServicer_to_server(servicer, server)
         self.mu.acquire()
         try:
             self._registration = reg
-            self._con = connection(reg.address, serv.CabalServicer(), False)
+            self._con = connection(reg.address, servicer, False)
             self.state = State.Connected
         finally:
             self.mu.release()
+
+        # Connect to server
+        if self._con._address == "":
+            raise Exception("connection.connect.noAddress")
+        
+        reflection.enable_server_reflection(self._opts.service.name,
+                                            self._con._server)
+        server.add_insecure_port(self._con._address)
+        server.start()
+        try:
+            while True:
+                time.sleep(_ONE_DAY_IN_SECONDS)
+        except:
+            server.stop(0)
 
         print("connected; coreAddress=(" + reg.address + ")")
 
@@ -165,7 +186,8 @@ class client:
             finally:
                 self.mu.release()
 
-            self.__unregister(self._opts.standalone.coreAddress, self._opts.service.name)
+            self.__unregister(self._opts.standalone.coreAddress,
+                              self._opts.service.name)
             self.__disconnect()
 
             print("shutdown complete...")
@@ -207,9 +229,10 @@ class client:
         make a registration request to gmbhCore.
 
         @return: registration object
-        !!! should raise an exception if could not get back a valid registration
+        !!! should raise an exception if could not get back a 
+            valid registration
     '''
-    def __register(self, coreAddress, name, aliases, peergroups, environment):
+    def __register(self, coreAddress, name, aliases, peergroups, environment) :
         with grpc.insecure_channel(coreAddress) as channel:
             stub = intrigue_pb2_grpc.CabalStub(channel)
 
