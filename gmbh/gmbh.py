@@ -148,13 +148,12 @@ class client:
             print("registration address not received")
             return
 
-        servicer = serv.CabalServicer()    
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        intrigue_pb2_grpc.add_CabalServicer_to_server(servicer, server)
+        intrigue_pb2_grpc.add_CabalServicer_to_server(serv.CabalServicer(), server)
         self.mu.acquire()
         try:
             self._registration = reg
-            self._con = connection(reg.address, servicer, False)
+            self._con = connection(reg.address, server, False)
             self.state = State.Connected
         finally:
             self.mu.release()

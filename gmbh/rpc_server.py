@@ -8,7 +8,7 @@ import datetime
 from threading import Thread, Lock
 
 class CabalServicer(pb2_g.CabalServicer):
-    pass
+    # pass
 
     def RegisterService(self, request, context):
         return pb2.Receipt(Message="operation.invalid")
